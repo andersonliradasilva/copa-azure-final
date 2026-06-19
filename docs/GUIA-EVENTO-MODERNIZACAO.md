@@ -25,11 +25,10 @@
    - [Fase 3 — Migrar o Backend (API) → Web App](#fase-3--migrar-o-backend-api--web-app)
    - [Fase 4 — Migrar o Frontend → Web App](#fase-4--migrar-o-frontend--web-app)
    - [Fase 5 — Migrar o Banco → Azure SQL Database](#fase-5--migrar-o-banco--azure-sql-database)
-   - [Fase 6 — Domínio e HTTPS (feito na Fase 4) + opção de cert gerenciado](#fase-6--domínio-e-https-já-feito-na-fase-4--opção-de-certificado-gerenciado)
-   - [Fase 7 — Smoke test ponta a ponta (100% PaaS)](#fase-7--smoke-test-ponta-a-ponta-100-paas)
-   - [Fase 8 — Decomissionar as VMs + comparação VM × PaaS](#fase-8--decomissionar-as-vms--comparação-vm--paas)
-   - [Fase 9 — Rede privada: Private Endpoints + VNet Integration](#fase-9--rede-privada-private-endpoints--vnet-integration)
-   - [Fase 10 — Troubleshooting](#fase-10--troubleshooting)
+   - [Fase 6 — Smoke test ponta a ponta (100% PaaS)](#fase-6--smoke-test-ponta-a-ponta-100-paas)
+   - [Fase 7 — Decomissionar as VMs + comparação VM × PaaS](#fase-7--decomissionar-as-vms--comparação-vm--paas)
+   - [Fase 8 — Rede privada: Private Endpoints + VNet Integration](#fase-8--rede-privada-private-endpoints--vnet-integration)
+   - [Fase 9 — Troubleshooting](#fase-9--troubleshooting)
 6. [Tabela de variáveis e segredos](#-6-tabela-de-variáveis-e-segredos)
 7. [Evolução (o "próximo nível" do PaaS)](#️-7-evolução-o-próximo-nível-do-paas)
 
@@ -159,7 +158,7 @@ Tudo num **novo Resource Group** PaaS, em **Central India** (mesma região da ap
 
 - 🟦🟩 **Blue/green, uma camada por vez.** Migramos **backend → frontend → banco**. Cada fase cria o recurso PaaS **ao lado** da VM, testa pelo endereço `*.azurewebsites.net`, e só depois reaponta. Você nunca derruba o ambiente antigo antes do novo provar que funciona.
 - 🗃️ **Banco por último (e de propósito).** Migrar **compute** (back/front) é "republicar o mesmo código num host novo". Migrar **dados** é diferente — tem schema, volume e uma **janela de corte**. Deixamos por último para o ambiente antigo continuar sendo a fonte da verdade até o momento exato do cutover.
-- 🔌 **VNet Integration é permanente (boa prática).** O **backend Web App** alcança a rede privada via **VNet Integration + peering** — primeiro o IP privado da `vm-data`, e depois o **Private Endpoint** do Azure SQL. Em vez de expor o banco na internet, o tráfego fica **dentro da VNet** do começo ao fim: modernizamos o banco (Fase 5), validamos pelo endpoint público temporariamente, e então **trancamos com Private Endpoint** (Fase 9). A integração **não é removida** — ela é o caminho de saída do app para a rede privada.
+- 🔌 **VNet Integration é permanente (boa prática).** O **backend Web App** alcança a rede privada via **VNet Integration + peering** — primeiro o IP privado da `vm-data`, e depois o **Private Endpoint** do Azure SQL. Em vez de expor o banco na internet, o tráfego fica **dentro da VNet** do começo ao fim: modernizamos o banco (Fase 5), validamos pelo endpoint público temporariamente, e então **trancamos com Private Endpoint** (Fase 8). A integração **não é removida** — ela é o caminho de saída do app para a rede privada.
 - 🔁 **Proxy reverso, agora gerenciado.** O mesmo `web.config` do front roda no Web App (é IIS por baixo), mas o "Enable proxy" do ARR — que na VM era um checkbox — no App Service vira um **`applicationHost.xdt`**. Mesma ideia, mecanismo PaaS.
 
 ---
@@ -174,15 +173,14 @@ Tudo num **novo Resource Group** PaaS, em **Central India** (mesma região da ap
 | **Fase 3** | Migrar **Backend** (API) → `app-prd-tk-bend` (App Service Migration Assistant) | 25 min |
 | **Fase 4** | Migrar **Frontend** → `app-prd-tk-fend` (+ `applicationHost.xdt`) | 20 min |
 | **Fase 5** | Migrar **Banco** → Azure SQL Database (SQL Migration extension, offline) | 30 min |
-| **Fase 6** | Domínio e HTTPS — feito na Fase 4 (cert das VMs via Key Vault); cert gerenciado é opcional | opcional |
-| **Fase 7** | Smoke test ponta a ponta (100% PaaS) | 10 min |
-| **Fase 8** | Decomissionar as VMs + comparação VM × PaaS | 10 min |
-| **Fase 9** | Rede privada: Private Endpoints + VNet Integration (só o front público) | 60 min |
-| **Fase 10** | Troubleshooting | livre |
+| **Fase 6** | Smoke test ponta a ponta (100% PaaS) | 10 min |
+| **Fase 7** | Decomissionar as VMs + comparação VM × PaaS | 10 min |
+| **Fase 8** | Rede privada: Private Endpoints + VNet Integration (só o front público) | 60 min |
+| **Fase 9** | Troubleshooting | livre |
 
-> 🧠 **Total esperado:** ~1h30–2h de mão na massa (+ ~1h se incluir a **Fase 9** de rede privada). Reserve **2h30–3h30** na primeira execução.
+> 🧠 **Total esperado:** ~1h30–2h de mão na massa (+ ~1h se incluir a **Fase 8** de rede privada). Reserve **2h30–3h30** na primeira execução.
 
-> 🔒 **Fase 9 — rede privada (boa prática recomendada).** As Fases 0–8 entregam o app **100% em PaaS** (com endpoints públicos protegidos por firewall). A **Fase 9** fecha a porta da internet para API e banco via **Private Endpoint** — é o que separa "PaaS que funciona" de "PaaS de produção" e o **caminho recomendado** depois de modernizar o banco (mantemos a VNet Integration justamente para isso). Você pode validar nas Fases 0–8 e emendar a Fase 9 em seguida.
+> 🔒 **Fase 8 — rede privada (boa prática recomendada).** As Fases 0–7 entregam o app **100% em PaaS** (com endpoints públicos protegidos por firewall). A **Fase 8** fecha a porta da internet para API e banco via **Private Endpoint** — é o que separa "PaaS que funciona" de "PaaS de produção" e o **caminho recomendado** depois de modernizar o banco (mantemos a VNet Integration justamente para isso). Você pode validar nas Fases 0–7 e emendar a Fase 8 em seguida.
 
 ---
 
@@ -202,7 +200,7 @@ Tudo num **novo Resource Group** PaaS, em **Central India** (mesma região da ap
 
 **Alerta de orçamento:** Portal → **Cost Management → Budgets → + Add** → **$20/mês**, alerta em 80% e 100% → seu e-mail. (O PaaS é barato, mas o hábito é bom.)
 
-> 🌐 **Importante — mantenha a `vm-fend` ligada até a Fase 5.** Ela é o seu **jump host** para acessar a `vm-data` (privada). Você só desliga/apaga **todas** as VMs na Fase 8, depois que o banco migrar.
+> 🌐 **Importante — mantenha a `vm-fend` ligada até a Fase 5.** Ela é o seu **jump host** para acessar a `vm-data` (privada). Você só desliga/apaga **todas** as VMs na Fase 7, depois que o banco migrar.
 
 > ✅ **Pronto quando:** o app abre pelas VMs, as 3 VMs estão **Running**, e você tem os dois instaladores baixados.
 
@@ -350,7 +348,7 @@ O banco ainda está na `vm-data` (IP privado, outra região). Para o Web App fal
 2. No `app-prd-tk-bend-cin-001` → **Settings → Networking** → **Outbound traffic → VNet integration** → **Add** → escolha `vnet-prd-inf-cin-001` / `snet-prd-inf-appsvc-cin-001`.
 3. Ainda em Networking, garanta **Route All / Outbound internet traffic** habilitado para que o tráfego vá pela VNet (e alcance a outra região via **peering**).
 
-> 💡 **Por que isso é necessário (por enquanto)?** Azure SQL terá endpoint público, mas o **SQL Server na VM não** — ele só responde no IP privado. A VNet Integration "pluga" o Web App na sua rede; o **peering global** (que você criou na fase VM) leva o pacote até a `vm-data` em Australia East. A NSG do banco já libera `1433` da faixa `10.20.0.0/16`, então **não precisa mexer no NSG**. A VNet Integration **permanece** (boa prática): após modernizar o banco (Fase 5), o Azure SQL passa a ser alcançado por **Private Endpoint** (Fase 9) — sem expor o banco na internet.
+> 💡 **Por que isso é necessário (por enquanto)?** Azure SQL terá endpoint público, mas o **SQL Server na VM não** — ele só responde no IP privado. A VNet Integration "pluga" o Web App na sua rede; o **peering global** (que você criou na fase VM) leva o pacote até a `vm-data` em Australia East. A NSG do banco já libera `1433` da faixa `10.20.0.0/16`, então **não precisa mexer no NSG**. A VNet Integration **permanece** (boa prática): após modernizar o banco (Fase 5), o Azure SQL passa a ser alcançado por **Private Endpoint** (Fase 8) — sem expor o banco na internet.
 
 #### 3.5 App Settings + Connection String do banco
 
@@ -559,7 +557,7 @@ Do seu computador, abra **`https://www.<seu-domínio>`** (com cadeado válido):
 
 #### 5.4 Reapontar o backend para o Azure SQL (mantendo a VNet Integration)
 
-Com os dados no Azure SQL, atualize o backend para o novo banco (a `vm-data` já pode ser desligada). A **VNet Integration permanece** — ela será o caminho de saída até o Private Endpoint na Fase 9:
+Com os dados no Azure SQL, atualize o backend para o novo banco (a `vm-data` já pode ser desligada). A **VNet Integration permanece** — ela será o caminho de saída até o Private Endpoint na Fase 8:
 
 1. `app-prd-tk-bend-cin-001` → **Connection strings** → edite `DefaultConnection`, mude o **Type** para **SQLAzure** e troque o **Value** pela string do Azure SQL:
    ```text
@@ -567,7 +565,7 @@ Com os dados no Azure SQL, atualize o backend para o novo banco (a `vm-data` já
    ```
    **Apply** (reinicia sozinho).
    > 💡 Note o `TrustServerCertificate=false`: o Azure SQL tem **certificado válido** (diferente do SQL Server da VM, que era self-signed → `true`).
-2. **NÃO remova a VNet Integration.** Para o teste desta fase, o Azure SQL é alcançado pelo **endpoint público + firewall** (Fase 5.1 — "Allow Azure services"). Em seguida, como **boa prática**, a **Fase 9** adiciona um **Private Endpoint** ao Azure SQL e **desliga o público** — e a VNet Integration (que fica) é justamente o caminho de saída do Web App até esse endpoint privado.
+2. **NÃO remova a VNet Integration.** Para o teste desta fase, o Azure SQL é alcançado pelo **endpoint público + firewall** (Fase 5.1 — "Allow Azure services"). Em seguida, como **boa prática**, a **Fase 8** adiciona um **Private Endpoint** ao Azure SQL e **desliga o público** — e a VNet Integration (que fica) é justamente o caminho de saída do Web App até esse endpoint privado.
 
 #### 5.5 Validar
 
@@ -579,32 +577,15 @@ Invoke-RestMethod "$BEND/api/health/db"        # connected:true, agora apontando
 
 > ✅ **Pronto quando:** `/api/health/db` conecta no `*.database.windows.net` e o app funciona **100% em PaaS**, com a `vm-data` **desligada**. As 3 VMs agora são história. 🎉🎉🎉
 >
-> ▶️ **Próximo passo (boa prática):** agora que o banco modernizou e foi validado, **tranque o acesso com Private Endpoint** (Fase 9) — o Azure SQL deixa de responder pela internet e passa a ser alcançado **só pela VNet** (via a VNet Integration que mantivemos).
+> ▶️ **Próximo passo (boa prática):** agora que o banco modernizou e foi validado, **tranque o acesso com Private Endpoint** (Fase 8) — o Azure SQL deixa de responder pela internet e passa a ser alcançado **só pela VNet** (via a VNet Integration que mantivemos).
 
 ---
 
-### Fase 6 — Domínio e HTTPS (já feito na Fase 4) + opção de certificado gerenciado
-
-> ✅ **O domínio customizado e o HTTPS já foram configurados na Fase 4.5**, **reaproveitando o certificado das VMs** (importado num Key Vault) — **sem gerar certificado novo**. O CORS definitivo também já foi ajustado (Fase 4.6). Se você seguiu a Fase 4, **esta fase não tem ação obrigatória**.
-
-> 📝 **Sem domínio próprio?** Tudo bem — o app já responde por `https://app-prd-tk-fend-cin-001.azurewebsites.net` (certificado do Azure). Domínio customizado é opcional.
-
-#### 6.1 (Opcional) Migrar para App Service Managed Certificate
-
-O certificado das VMs (Let's Encrypt/Posh-ACME) **vence a cada ~90 dias** — e, do jeito da Fase 4, você teria que **renovar e reimportar no Key Vault** manualmente. Se quiser **zero manutenção**, troque depois pelo **App Service Managed Certificate** (emitido e renovado automaticamente pela plataforma):
-
-1. `app-prd-tk-fend-cin-001` → **Custom domains** → no domínio `www.<seu-domínio>` → **Add binding** → **Create App Service Managed Certificate** (grátis) → **SNI SSL**.
-2. Quando o binding gerenciado estiver ativo, **remova o binding** do certificado antigo (o do Key Vault).
-
-> 💡 **VM × PaaS no TLS.** Na VM você emitia/renovava à mão (Posh-ACME, desafios TXT, binding no IIS, a cada 90 dias). Reaproveitar o cert das VMs (Fase 4) é o caminho de **transição** — mantém o mesmo cadeado sem reemitir. O **App Service Managed Certificate** é o **destino sem manutenção** (renovação automática). Escolha conforme o objetivo do evento.
-
----
-
-### Fase 7 — Smoke test ponta a ponta (100% PaaS)
+### Fase 6 — Smoke test ponta a ponta (100% PaaS)
 
 Teste do **seu computador**, com a internet real, na URL final (domínio ou `*.azurewebsites.net`).
 
-#### 7.1 No navegador
+#### 6.1 No navegador
 
 - [ ] A **home** carrega (104 jogos)
 - [ ] **Login** `admin@fifa2026.com` / `admin123`
@@ -613,7 +594,7 @@ Teste do **seu computador**, com a internet real, na URL final (domínio ou `*.a
 - [ ] **Página de validação** do ingresso → "válido"
 - [ ] **Painel admin** (vendas/usuários) abre
 
-#### 7.2 PowerShell — validação automatizada
+#### 6.2 PowerShell — validação automatizada
 
 ```powershell
 $APP = "https://www.<seu-domínio>"   # ou https://app-prd-tk-fend-cin-001.azurewebsites.net
@@ -630,11 +611,11 @@ $h = @{ Authorization = "Bearer $($r.token)" }
 
 ---
 
-### Fase 8 — Decomissionar as VMs + comparação VM × PaaS
+### Fase 7 — Decomissionar as VMs + comparação VM × PaaS
 
 > 🧹 **Agora sim: apaga as VMs.** Com tudo validado em PaaS, o ambiente VM não serve mais a nada — é só custo.
 
-#### 8.1 Apagar o Resource Group das VMs
+#### 7.1 Apagar o Resource Group das VMs
 
 Pelo **Azure Cloud Shell**:
 ```bash
@@ -643,9 +624,9 @@ az group delete --name rg-prd-tik-cin-001 --yes --no-wait
 
 Isso apaga, em bloco: 3 VMs + 3 discos + 3 NICs + 2 NSGs + **2 VNets (com o peering)** + IPs públicos — em ambas as regiões. **O `rg-prd-tik-paas-cin-001` (PaaS) permanece** rodando o app.
 
-> ⚠️ **Confirme o PaaS no ar ANTES de apagar.** Refaça o smoke test da Fase 7. Só apague as VMs depois que o app responder 100% por PaaS — esse é o ponto de não-retorno do blue/green.
+> ⚠️ **Confirme o PaaS no ar ANTES de apagar.** Refaça o smoke test da Fase 6. Só apague as VMs depois que o app responder 100% por PaaS — esse é o ponto de não-retorno do blue/green.
 
-#### 8.2 (Fim do evento) Apagar também o PaaS
+#### 7.2 (Fim do evento) Apagar também o PaaS
 
 Quando não precisar mais de nada:
 ```bash
@@ -653,7 +634,7 @@ az group delete --name rg-prd-tik-paas-cin-001 --yes --no-wait
 ```
 Apaga os 2 Web Apps + o plano + o Azure SQL + o DMS. **Custo zero a partir daqui.**
 
-#### 8.3 A lição: VM × PaaS lado a lado
+#### 7.3 A lição: VM × PaaS lado a lado
 
 | Dimensão | Cenário VM (guia anterior) | Cenário PaaS (este guia) |
 |---|---|---|
@@ -665,7 +646,7 @@ Apaga os 2 Web Apps + o plano + o Azure SQL + o DMS. **Custo zero a partir daqui
 | 🚀 **Deploy** | RDP + copiar arquivos + `iisreset` | Publicar (assistant/zip); reinício automático |
 | 📈 **Escala** | Redimensionar a VM (downtime) | **Scale up/out** com clique |
 | 💰 **Custo (24/7)** | ~$90/mês | ~$18/mês |
-| 🧅 **Segurança** | NSG + jump host + você fecha tudo | Endpoint gerenciado + firewall → **rede privada na Fase 9** (Private Endpoints) |
+| 🧅 **Segurança** | NSG + jump host + você fecha tudo | Endpoint gerenciado + firewall → **rede privada na Fase 8** (Private Endpoints) |
 
 > 🧠 **A grande sacada:** PaaS não é "melhor" em tudo de forma absoluta — VM dá **controle total** (e responsabilidade total). PaaS troca controle por **menos trabalho operacional**. Saber **quando usar cada um** é o que esta dupla de guias ensina.
 
@@ -673,13 +654,13 @@ Apaga os 2 Web Apps + o plano + o Azure SQL + o DMS. **Custo zero a partir daqui
 
 ---
 
-### Fase 9 — Rede privada: Private Endpoints + VNet Integration
+### Fase 8 — Rede privada: Private Endpoints + VNet Integration
 
 > 🎯 **O passo final de produção.** Até aqui, front, API e banco têm **endpoints públicos** (com firewall, mas expostos). Agora você **fecha a porta**: só o **frontend** continua na internet; **API e banco** passam a viver **dentro da VNet**, alcançáveis só por **IP privado**. E o melhor — **sem tocar em uma linha de código da aplicação**.
 
-> 🧩 **Quando fazer:** depois de validar o app 100% em PaaS (Fases 7-8). Adiciona ~$28/mês enquanto no ar (1 plano B1 extra + 2 Private Endpoints + DNS) — provisiona, demonstra e derruba (Fase 8.2).
+> 🧩 **Quando fazer:** depois de validar o app 100% em PaaS (Fases 6-7). Adiciona ~$28/mês enquanto no ar (1 plano B1 extra + 2 Private Endpoints + DNS) — provisiona, demonstra e derruba (Fase 7.2).
 
-#### 9.1 O conceito-chave: inbound × outbound
+#### 8.1 O conceito-chave: inbound × outbound
 
 Quase todo erro aqui vem de confundir as duas peças:
 
@@ -699,7 +680,7 @@ API    ──[VNet Integration: saída]──▶  [Private Endpoint do SQL: entr
 
 > 🧠 **Por que zero código?** O app continua pedindo os mesmos nomes (`app-...-bend.azurewebsites.net`, `sql-...database.windows.net`); o Private DNS só muda **para onde** eles resolvem. O certificado `*.azurewebsites.net` segue válido (mesmo nome).
 
-#### 9.2 Estado-alvo e recursos
+#### 8.2 Estado-alvo e recursos
 
 ```
               Internet
@@ -723,31 +704,31 @@ Tudo na VNet que você já tem (`vnet-prd-inf-cin-001`, `10.20.0.0/16`):
 
 > 🧠 **Regra de ouro da ordem:** **abrir o caminho privado → validar → só então desligar o público.** Nunca tranque uma porta sem ter aberto a outra — é o que garante zero downtime.
 
-#### 9.3 Preparar a rede (subnets)
+#### 8.3 Preparar a rede (subnets)
 
 Portal → `vnet-prd-inf-cin-001` → **Subnets** → **+ Subnet**:
 1. **`snet-prd-inf-pe-cin-001`** · `10.20.5.0/24` · **Network policies for private endpoints: Disabled** · sem delegação.
 2. **`snet-prd-inf-appf-cin-001`** · `10.20.4.0/24` · **Delegation: Microsoft.Web/serverFarms**.
 3. A **API** reusa a `snet-prd-inf-appsvc-cin-001` (`10.20.3.0/24`) criada na Fase 3.4 (se removeu, recrie delegada).
 
-> 💡 Uma subnet de integração é **dedicada a um plano**. Como front e API ficarão em **planos diferentes** (9.4), cada um precisa da **sua** subnet. Os Private Endpoints **compartilham** uma subnet.
+> 💡 Uma subnet de integração é **dedicada a um plano**. Como front e API ficarão em **planos diferentes** (8.4), cada um precisa da **sua** subnet. Os Private Endpoints **compartilham** uma subnet.
 
-#### 9.4 Separar a API em seu próprio App Service Plan
+#### 8.4 Separar a API em seu próprio App Service Plan
 
 1. Portal → **App Service plans** → **+ Create** → `asp-prd-tk-bend-cin-001` · Windows · Central India · **B1**.
 2. `app-prd-tk-bend-cin-001` → **Settings → App Service plan → Change App Service plan** → selecione `asp-prd-tk-bend-cin-001` (reinicia, sem perder config).
 
 > ⚠️ **Obrigatório:** um app **não alcança bem o Private Endpoint de outro app no mesmo plano** ([Microsoft Learn](https://learn.microsoft.com/en-us/azure/app-service/overview-vnet-integration)). Como o front vai chamar a API via PE, a API **precisa** de plano separado (bônus: escalam independente).
 
-#### 9.5 Private Endpoint do Azure SQL (público ainda ligado)
+#### 8.5 Private Endpoint do Azure SQL (público ainda ligado)
 
 1. `sql-prd-tk-cin-001` → **Security → Networking → Private access** → **+ Create a private endpoint**.
 2. **Name:** `pe-prd-tk-sql-cin-001` · sub-resource **sqlServer** · VNet `vnet-prd-inf-cin-001` · Subnet `snet-prd-inf-pe-cin-001`.
 3. **Private DNS integration: Yes** → zona `privatelink.database.windows.net` (Portal cria e **liga à VNet**).
 
-> ⏸️ **Não desligue o público do SQL ainda** — a API precisa de VNet Integration (9.6) para alcançar o IP privado primeiro. Desligar agora cortaria o app.
+> ⏸️ **Não desligue o público do SQL ainda** — a API precisa de VNet Integration (8.6) para alcançar o IP privado primeiro. Desligar agora cortaria o app.
 
-#### 9.6 VNet Integration da API → SQL privado (e desligar o público do SQL)
+#### 8.6 VNet Integration da API → SQL privado (e desligar o público do SQL)
 
 1. `app-prd-tk-bend-cin-001` → **Networking → Outbound → VNet integration → Add** → `snet-prd-inf-appsvc-cin-001` · garanta **Route All** (`WEBSITE_VNET_ROUTE_ALL=1`).
 2. Valide: `Invoke-RestMethod "$BEND/api/health/db"` → **connected** (agora via IP privado).
@@ -756,21 +737,21 @@ Portal → `vnet-prd-inf-cin-001` → **Subnets** → **+ Subnet**:
 
 > 💡 O **host no `DefaultConnection`** **não mudou** — o mesmo FQDN agora resolve privado (VNet integ. + Route All + zona DNS linkada).
 
-#### 9.7 Private Endpoint da API (público ainda ligado)
+#### 8.7 Private Endpoint da API (público ainda ligado)
 
 1. `app-prd-tk-bend-cin-001` → **Networking → Inbound → Private endpoints → + Add** → `pe-prd-tk-bend-cin-001` · VNet `vnet-prd-inf-cin-001` · Subnet `snet-prd-inf-pe-cin-001`.
 2. **Private DNS integration: Yes** → zona `privatelink.azurewebsites.net`.
 
-> ⏸️ **Não desligue o público da API ainda** — o front só a alcança privado depois do 9.8.
+> ⏸️ **Não desligue o público da API ainda** — o front só a alcança privado depois do 8.8.
 
-#### 9.8 VNet Integration do Front (e desligar o público da API)
+#### 8.8 VNet Integration do Front (e desligar o público da API)
 
 1. `app-prd-tk-fend-cin-001` → **Networking → Outbound → VNet integration → Add** → `snet-prd-inf-appf-cin-001` · **Route All** ligado.
 2. Valide ponta a ponta: `Invoke-RestMethod "$APP/api/health"` → OK (front proxiou para a API via IP privado; o `web.config` **não mudou**).
 3. **Agora sim:** `app-prd-tk-bend-cin-001` → **Networking → Inbound → Public network access → Disabled**.
 4. **Confirme o bloqueio:** chamar a URL da API **direto** da internet deve dar **403/timeout**.
 
-#### 9.9 Validação + considerações operacionais
+#### 8.9 Validação + considerações operacionais
 
 Smoke final (do seu PC): o app funciona pelo **front público**; a **API e o SQL não respondem pela internet** (403/timeout). 🔒
 
@@ -787,7 +768,7 @@ Ao privatizar, duas tarefas mudam — e isso é **esperado**:
 
 ---
 
-### Fase 10 — Troubleshooting
+### Fase 9 — Troubleshooting
 
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
@@ -800,11 +781,11 @@ Ao privatizar, duas tarefas mudam — e isso é **esperado**:
 | Mudei App Setting e **nada mudou** | Cache de instância | App Settings reiniciam o app, mas force um **Restart** se preciso. (No App Service **não** existe `iisreset`.) |
 | Migração do banco trava no **Integration Runtime** | IR não registrado/sem saída 443 | Reinstale o IR na `vm-data` com a chave do wizard; ou use o **Plano B do `.bacpac`** (5.3) |
 | Domínio customizado **não valida** | Registro `asuid` TXT/CNAME não propagou | `Resolve-DnsName asuid.www.<domínio> -Type TXT -Server 8.8.8.8`; aguarde a propagação e revalide |
-| **(Fase 9)** `/api/*` dá **502/timeout** após desligar o público da API | Front sem **Route All**, ou zona `privatelink.azurewebsites.net` não linkada | Confirme VNet Integration do front + `WEBSITE_VNET_ROUTE_ALL=1` + zona linkada à VNet (9.8) |
-| **(Fase 9)** `/api/health/db` dá **ETIMEOUT** após desligar o público do SQL | API sem VNet Integration/Route All, ou zona `privatelink.database.windows.net` não linkada | Reveja a Fase 9.6 (integração + Route All + zona DNS) |
-| **(Fase 9)** API **não alcança** o Private Endpoint mesmo com tudo certo | Front e API ainda no **mesmo plano** | Confirme a Fase 9.4 — API em `asp-prd-tk-bend-cin-001` (plano separado) |
-| **(Fase 9)** PE criado mas o nome resolve **IP público** | Consulta feita **de fora** da VNet, ou zona DNS não linkada | Private DNS resolve **de dentro** da VNet; teste via `/api/health` do app, não do seu PC |
-| **(Fase 9)** Private Endpoint **não cria** na subnet | Network policies de PE habilitadas | `snet-prd-inf-pe-cin-001` → desabilite *network policies for private endpoints* (9.3) |
+| **(Fase 8)** `/api/*` dá **502/timeout** após desligar o público da API | Front sem **Route All**, ou zona `privatelink.azurewebsites.net` não linkada | Confirme VNet Integration do front + `WEBSITE_VNET_ROUTE_ALL=1` + zona linkada à VNet (8.8) |
+| **(Fase 8)** `/api/health/db` dá **ETIMEOUT** após desligar o público do SQL | API sem VNet Integration/Route All, ou zona `privatelink.database.windows.net` não linkada | Reveja a Fase 8.6 (integração + Route All + zona DNS) |
+| **(Fase 8)** API **não alcança** o Private Endpoint mesmo com tudo certo | Front e API ainda no **mesmo plano** | Confirme a Fase 8.4 — API em `asp-prd-tk-bend-cin-001` (plano separado) |
+| **(Fase 8)** PE criado mas o nome resolve **IP público** | Consulta feita **de fora** da VNet, ou zona DNS não linkada | Private DNS resolve **de dentro** da VNet; teste via `/api/health` do app, não do seu PC |
+| **(Fase 8)** Private Endpoint **não cria** na subnet | Network policies de PE habilitadas | `snet-prd-inf-pe-cin-001` → desabilite *network policies for private endpoints* (8.3) |
 
 > 📚 **Diagnóstico de banco:** o endpoint `/api/health/db` continua sendo o melhor sinal — ele devolve o erro real (`code`) e a config em uso, igual na fase VM. A diferença é que aqui você lê os logs no **Log stream** do Portal, não em arquivo na VM.
 
@@ -839,14 +820,14 @@ Ao privatizar, duas tarefas mudam — e isso é **esperado**:
 
 > 🧠 **Tópico de aprendizado — não é passo do workshop.** O que você montou **funciona e ensina a jornada**. Mas, como sempre, o arquiteto pergunta: *"o que falta para produção de verdade?"*
 
-O ambiente PaaS já entrega backups, HA e patch gerenciados. A **rede privada** (Private Endpoints + VNet Integration) já foi incorporada como **Fase 9** desta jornada. Um time de produção ainda adicionaria:
+O ambiente PaaS já entrega backups, HA e patch gerenciados. A **rede privada** (Private Endpoints + VNet Integration) já foi incorporada como **Fase 8** desta jornada. Um time de produção ainda adicionaria:
 
 1. **🔐 Azure Key Vault + Managed Identity** — tirar a senha do `DefaultConnection` e o `JWT_SECRET` da config (Connection strings / App Settings). O Web App ganha uma **identidade gerenciada** e lê os segredos do Key Vault via *reference* — sem senha em lugar nenhum visível.
 2. **📊 Application Insights** — telemetria de requisições, falhas e performance do app, sem instalar agente. Você "enxerga" o app em produção.
-3. **🚦 Front Door + WAF** — um Front Door com WAF na borda do frontend, filtrando ataques antes de chegar no app (a API e o banco já estão privados desde a Fase 9).
-4. **🤖 CI/CD com GitHub Actions (OIDC)** — em vez de publicar pelo assistant/zip à mão, um pipeline faz **build + deploy** a cada push, com autenticação sem segredo (OIDC). Com a API privada (Fase 9), o deploy passa a sair de um **runner na VNet**. _(Os workflows já existem no repo — veja `.github/workflows/`.)_
+3. **🚦 Front Door + WAF** — um Front Door com WAF na borda do frontend, filtrando ataques antes de chegar no app (a API e o banco já estão privados desde a Fase 8).
+4. **🤖 CI/CD com GitHub Actions (OIDC)** — em vez de publicar pelo assistant/zip à mão, um pipeline faz **build + deploy** a cada push, com autenticação sem segredo (OIDC). Com a API privada (Fase 8), o deploy passa a sair de um **runner na VNet**. _(Os workflows já existem no repo — veja `.github/workflows/`.)_
 
-> 🧠 **Lembre do escopo:** estes itens são o **endurecimento e a automação** adicionais — assunto de uma próxima etapa. A jornada **VM → PaaS** (Fases 0–8) + a **rede privada** (Fase 9) você acabou de completar.
+> 🧠 **Lembre do escopo:** estes itens são o **endurecimento e a automação** adicionais — assunto de uma próxima etapa. A jornada **VM → PaaS** (Fases 0–7) + a **rede privada** (Fase 8) você acabou de completar.
 
 ---
 
