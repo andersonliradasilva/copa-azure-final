@@ -33,13 +33,6 @@ name: Deploy Phase 05 — AI / MCP (McpServer Container App + Chatbot frontend)
 # conhece a URL do proxy (VITE_LLM_PROXY_URL), nunca a key.
 
 on:
-  push:
-    branches: [phase-05-ai-mcp]
-    paths:
-      - 'src/Fifa2026.V2.McpServer/**'
-      - 'src/Fifa2026.V2.McpServer.Tests/**'
-      - 'Lovable/World Cup Tickets Hub/**'
-      - '.github/workflows/deploy-phase-05.yml'
   workflow_dispatch:
     inputs:
       mcp_app_name:

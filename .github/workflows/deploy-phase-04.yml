@@ -35,13 +35,6 @@ name: Deploy Phase 04 — Orchestration (Function webhook + n8n Container App)
 # aula (Story 2.4 Task 10.2), pois latest pode ter avançado desde a última aula.
 
 on:
-  push:
-    branches: [phase-04-orchestration]
-    paths:
-      - 'src/Fifa2026.V2.Functions/**'
-      - 'src/Fifa2026.V2.Functions.Tests/**'
-      - 'infra/phase-04/**'
-      - '.github/workflows/deploy-phase-04.yml'
   workflow_dispatch:
     inputs:
       function_app_name:

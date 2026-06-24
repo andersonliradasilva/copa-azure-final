@@ -34,15 +34,6 @@ name: Deploy Phase 06 — Flow Visualizer (FlowEvents Container App + /flow fron
 # "Log Analytics Reader" no workspace, senão o LogsQueryClient recebe 403.
 
 on:
-  push:
-    branches: [phase-06-flow-visualizer]
-    paths:
-      - 'src/Fifa2026.V2.FlowEvents/**'
-      - 'src/Fifa2026.V2.FlowEvents.Tests/**'
-      - 'src/Fifa2026.V2.Gateway/**'
-      - 'Lovable/World Cup Tickets Hub/**'
-      - 'infra/phase-06/**'
-      - '.github/workflows/deploy-phase-06.yml'
   workflow_dispatch:
     inputs:
       flow_app_name:

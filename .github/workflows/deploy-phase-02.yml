@@ -11,12 +11,6 @@ name: Deploy Phase 02 — Gateway YARP
 #   - var     PHASE02_RESOURCE_GROUP          : resource group do aluno
 
 on:
-  push:
-    branches: [phase-02-gateway]
-    paths:
-      - 'src/Fifa2026.V2.Gateway/**'
-      - 'src/Fifa2026.V2.Gateway.Tests/**'
-      - '.github/workflows/deploy-phase-02.yml'
   workflow_dispatch:
     inputs:
       containerapp_name:
