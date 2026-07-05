@@ -1,7 +1,7 @@
 # Speaker Notes — A Grande Final (F5 + F6) · notas do instrutor
 
 > **Notas do apresentador/facilitador** · Workshop "Living Lab Azure-Native" (FIFA 2026 Tickets) · **A ÚLTIMA aula** — a Grande Final.
-> **Use junto com:** [`STORYBOARD-APRESENTACAO.md`](./STORYBOARD-APRESENTACAO.md) — **o deck de 11 slides (`.pptx`)** que você projeta e **grava**; estas notas seguem a numeração dele **1:1** (S1…S11). · [`slides.md`](./slides.md) (versão reveal.js navegável, mais granular, do mesmo conteúdo). · [`docs/runbooks/final-portal-guide.md`](../../runbooks/final-portal-guide.md) (o guia de portal que a turma segue nos momentos hands-on).
+> **Use junto com:** [`STORYBOARD-APRESENTACAO.md`](./STORYBOARD-APRESENTACAO.md) — **o deck de 10 slides (`.pptx`)** que você projeta e **grava**; estas notas seguem a numeração dele **1:1** (S1…S10). · [`slides.md`](./slides.md) (versão reveal.js navegável, mais granular, do mesmo conteúdo). · [`docs/runbooks/final-portal-guide.md`](../../runbooks/final-portal-guide.md) (o guia de portal que a turma segue nos momentos hands-on).
 > **Stories:** [3.3](../../stories/3.3.story.md) · [3.4](../../stories/3.4.story.md) · [3.5](../../stories/3.5.story.md) · **Arquitetura:** ADE-008 (re-arquitetura da Final, sem orquestração externa) · ADE-009 (X-Gateway-Key) · ADE-010 (MI + Key Vault + observabilidade) · ADE-007 (identidade unificada)
 
 **Como estas notas se organizam (LEIA ISTO):** há **exatamente 10 seções**, uma por **slide do deck `.pptx`** (o do `STORYBOARD-APRESENTACAO.md`), **na mesma ordem em que os slides aparecem** — `## Slide 1 … ## Slide 10`. O título de cada seção é o **mesmo título do slide do PPT**, para você achar de bate-pronto na hora de **gravar**. Onde o slide reúne mais de um assunto (ex.: o slide 4 traz o MCP **e** a lista das 7 ferramentas), os dois vêm como **subtópicos da mesma seção**. Onde o slide dispara um **momento hands-on**, há um bloco **▶ PAUSA O DECK → GUIA** que te leva ao `final-portal-guide.md` e te diz quando **voltar** ao deck. A **ordem real na sala** (com pausas e o intervalo) está no **Mapa deck → lab** logo abaixo — o deck é linear (S1→S10), mas a aula intercala deck e hands-on.
@@ -181,7 +181,7 @@
 
 ## Slide 5 — RAG por tool-use (Gemini + 7 tools) · TECNOLOGIA 2 DE 4 [~10 min + dispara o hands-on do F5]
 
-> **Este slide reúne o RAG e o alerta honesto "RAG aqui NÃO é vector store" (no reveal eram dois slides). Ensine o RAG e, na sequência, faça a ressalva. No fim do slide, é onde você **pausa o deck** para o hands-on do F5.**
+> **Este slide reúne o RAG e o alerta honesto "RAG aqui NÃO é vector store" (no reveal eram dois slides). Ensine o RAG e, na sequência, faça a ressalva. No fim do slide, é onde você pausa o deck para o hands-on do F5.**
 
 ### 5a) O que é RAG [~6 min]
 
@@ -269,7 +269,7 @@
 
 ## Slide 7 — Azure SignalR + observabilidade (Flow Visualizer) · TECNOLOGIA 4 DE 4 (+ os 5 nós) [~9 min + dispara o hands-on do F6]
 
-> **Este slide reúne o SignalR/observabilidade e a apresentação dos 5 nós (no reveal eram dois slides). Ensine a tecnologia, apresente os 5 nós e, no fim, **pause o deck** para o hands-on do F6.**
+> **Este slide reúne o SignalR/observabilidade e a apresentação dos 5 nós (no reveal eram dois slides). Ensine a tecnologia, apresente os 5 nós e, no fim, pause o deck para o hands-on do F6.**
 
 ### 7a) O que é (SignalR + observabilidade) [~6 min]
 
@@ -306,7 +306,7 @@
 
 > **▶ PAUSA O DECK → GUIA (F6 hands-on · Fases 6–8 do `final-portal-guide.md`) · ~1h30–2h30**
 >
-> Saia do deck e conduza pelo guia. **Volte ao deck no slide 8** (identidade unificada, rápido) **e no slide 9** (o smoke ao vivo).
+> Saia do deck e conduza pelo guia. **Volte ao deck neste slide 7** (os 5 nós — o smoke ao vivo, subtópico 7c) **e depois siga ao slide 8** (identidade unificada).
 >
 > **Fase 6 — Azure SignalR + Managed Identity [~50 min].** Pontos: **SignalR Free (Free_F1), Service Mode `Default`** (não Serverless — erro clássico) · **CORS = origin exato** do frontend (`https://<seu-front>.azurewebsites.net`, nunca `*`) · **Container App do FlowEvents é EXTERNO** (≠ McpServer!): "Accepting traffic from anywhere", **Transport = `Auto`** (habilita WebSocket), **Target port = 8080** · **Managed Identity + role `Log Analytics Reader`** no workspace (**sem o papel, 403 e os nós nunca acendem**).
 >   - **Pergunta para a turma (contraste — momento aha):** "Por que o McpServer é **interno** e o FlowEvents é **externo**?" → o McpServer guarda dados sensíveis atrás do gateway (só o gateway fala com ele); o FlowEvents é **leitura de telemetria** que o front consome via gateway e por WebSocket.
@@ -351,7 +351,7 @@
 > "Aqui está o que muda para o produto: um cliente **nato-CIAM** — cadastrado direto no External ID, sem nunca ter tido conta v1 — **antes não conseguia comprar**, porque o checkout exigia um `users.id` do v1 que ele não tinha. A unificação o torna **cidadão de primeira classe**: ele compra, e passa a ser visível ao dashboard admin (que lê `users`). O JIT não é enfeite — é o que **destrava a compra** para esse público."
 
 **A blindagem (NÃO pule — é segurança):**
-> "Um detalhe crítico: o endpoint é protegido pelo fence **`CiamOnly`**. **Só** um token de **cliente CIAM** aciona o resolve-or-provision — um token de **admin/workforce** (que também carrega um `oid`) é **rejeitado** (403). Sem esse fence, um admin provisionaria/​vincularia uma linha de **cliente** com a identidade do **operador**, corrompendo a base. O admin workforce está **explicitamente fora** do eixo de unificação."
+> "Um detalhe crítico: o endpoint é protegido pelo fence **`CiamOnly`**. **Só** um token de **cliente CIAM** aciona o resolve-or-provision — um token de **admin/workforce** (que também carrega um `oid`) é **rejeitado** (403). Sem esse fence, um admin provisionaria/vincularia uma linha de **cliente** com a identidade do **operador**, corrompendo a base. O admin workforce está **explicitamente fora** do eixo de unificação."
 
 **A frase de efeito:**
 > "O login novo não apaga o usuário antigo — ele o **adota**."

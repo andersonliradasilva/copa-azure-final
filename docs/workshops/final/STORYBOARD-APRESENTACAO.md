@@ -27,7 +27,7 @@ DIRETRIZES VISUAIS GLOBAIS (valem para TODOS os slides)
    - VERDE-AZULADO (teal) → tudo de F5 / voz / leitura / read-only.
    - ROXO → tudo de F6 / visão / observabilidade.
    - VERMELHO → usar SÓ no realce de segurança (X-Gateway-Key / "por construção").
-• FOOTER FIXO em todos os 11 slides (rodapé, uma linha, discreto):
+• FOOTER FIXO em todos os 10 slides (rodapé, uma linha, discreto):
    COPA DO MUNDO AZURE 2026   |   A GRANDE FINAL · F5/F6 — VOZ & VISÃO
 • Nos slides de tecnologia (4, 5, 6, 7): um SELO no canto — "TECNOLOGIA N DE 4".
 • Diagramas SEMPRE como caixas + setas simples (estilo "COMO FUNCIONA"), nunca
